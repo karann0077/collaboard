@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 
-const SERVER = 'http://127.0.0.1:4000';
+const SERVER = import.meta.env.VITE_SERVER_URL;
+
 
 // Helper functions to draw strokes and shapes
 function drawStrokeOnCtx(ctx, stroke) {
