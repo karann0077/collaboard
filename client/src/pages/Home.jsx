@@ -9,7 +9,8 @@ export default function Home() {
   const createMeeting = async () => {
     if (!name.trim()) return alert('Please enter your name');
     try {
-      const res = await fetch('http://127.0.0.1:4000/create-room');
+      const res = await fetch(import.meta.env.VITE_SERVER_URL + '/create-room')
+
       const data = await res.json();
       navigate(`/room/${data.roomId}`, { state: { name } });
     } catch (err) {
