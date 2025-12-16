@@ -98,6 +98,7 @@ collaboard/
 ├── README.md
 └── .gitignore
 
+```
 
 ## Run locally
 
