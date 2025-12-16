@@ -1,0 +1,39 @@
+:root{
+  --bg:linear-gradient(180deg,#f8fafc,#eef2ff);
+  --card:#fff;
+  --accent:#6366f1;
+}
+*{box-sizing:border-box}
+body{ font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; margin:0; background:var(--bg); color:#0f172a;}
+.topbar{ display:flex; justify-content:space-between; align-items:center; padding:20px 40px; background:transparent;}
+.logo{ font-weight:700; font-size:20px;}
+.home-hero .topbar .tag{ color:#6b7280; margin-left:12px;}
+.home-grid{ display:flex; gap:24px; padding:40px; justify-content:center; align-items:flex-start;}
+.card{ background:var(--card); padding:20px; border-radius:12px; box-shadow:0 8px 24px rgba(2,6,23,0.06); width:420px;}
+.card h2{ margin:0 0 8px 0;}
+.muted{ color:#6b7280; margin-bottom:8px;}
+.card input{ width:100%; padding:10px; margin-top:8px; border-radius:8px; border:1px solid #e6e6e6; }
+.actions{ margin-top:12px; display:flex; gap:8px;}
+.primary{ background:var(--accent); color:white; border:none; padding:8px 12px; border-radius:8px; cursor:pointer;}
+.secondary{ background:transparent; border:1px solid #e6e6e6; padding:8px 12px; border-radius:8px; cursor:pointer;}
+
+.room-root{ display:flex; flex-direction:column; height:100vh;}
+.room-top{ display:flex; align-items:center; justify-content:space-between; padding:12px 20px; background:rgba(255,255,255,0.7); box-shadow:0 1px 0 rgba(0,0,0,0.04);}
+.brand{ font-weight:700;}
+.room-body{ display:flex; flex:1; overflow:hidden;}
+.toolbar{ width:260px; padding:16px; background:#fff; border-right:1px solid #f1f5f9; display:flex; flex-direction:column; gap:8px;}
+.tool{ padding:8px; border-radius:8px; cursor:pointer; border:1px solid transparent;}
+.tool:hover{ background:#f8fafc;}
+.tool.selected{ background:#eef2ff; border-color:var(--accent); color:var(--accent); font-weight:600;}
+.control{ margin-top:8px;}
+.participants{ margin-top:12px;}
+.participants ul{ list-style:none; padding:0; margin:0;}
+.participants li{ display:flex; align-items:center; gap:8px; padding:6px 0;}
+.avatar{ width:14px; height:14px; border-radius:50%; display:inline-block; }
+
+.canvas-wrap{ flex:1; display:flex; align-items:center; justify-content:center; padding:20px; background:linear-gradient(180deg,#ffffff,#f8fafc);}
+.canvas-area{ position:relative; border-radius:8px; box-shadow:0 8px 30px rgba(2,6,23,0.06); overflow:hidden;}
+.board-canvas{ background:white; display:block; }
+.overlay-canvas{ position:absolute; left:0; top:0; pointer-events:none; }
+
+.room-actions button{ margin-left:8px; padding:8px 10px; border-radius:8px; border:none; cursor:pointer; background:#eef2ff;}
