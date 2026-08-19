@@ -176,6 +176,21 @@ export default function Room() {
       historyStep.current = -1;
     });
 
+    // Receive authoritative board state after any undo/redo.
+    // Server re-projects the event log and broadcasts the full canvas state.
+    // All clients in the room clear and redraw from this single source of truth.
+    socket.on('board-state', ({ strokes, shapes }) => {
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (shapes && shapes.length) {
+        for (const s of shapes) drawShapeOnCtx(ctx, s);
+      }
+      if (strokes && strokes.length) {
+        for (const st of strokes) drawStrokeOnCtx(ctx, st);
+      }
+    });
+
     socket.on('disconnect', () => setStatus('Disconnected'));
 
     return () => {
@@ -413,6 +428,28 @@ export default function Room() {
     window.addEventListener('resize', resize);
     return () => window.removeEventListener('resize', resize);
   }, []);
+
+  // Keyboard shortcuts for collaborative undo/redo.
+  // Emits to the server rather than manipulating local state directly.
+  // Server re-projects the event log and broadcasts authoritative board-state
+  // to ALL users in the room — everyone sees the same result.
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const isCtrlOrCmd = e.ctrlKey || e.metaKey;
+      if (!socketRef.current || !socketRef.current.connected) return;
+      if (isCtrlOrCmd && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        socketRef.current.emit('undo', { roomId });
+      }
+      // Ctrl+Y (Windows) and Ctrl+Shift+Z (Mac) both trigger redo
+      if (isCtrlOrCmd && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        socketRef.current.emit('redo', { roomId });
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [roomId]);
 
   const emitCursor = (x, y) => {
     if (!socketRef.current || !socketRef.current.connected) return;
