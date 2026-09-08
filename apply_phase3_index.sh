@@ -1,3 +1,9 @@
+#!/bin/bash
+set -e
+
+cd /Users/DELL/Desktop/collab_board/server
+
+cat << 'EJS' > index.js
 require('dotenv').config();
 const express = require('express'); 
 const http = require('http'); 
@@ -219,3 +225,6 @@ async function bootstrap() {
   server.listen(process.env.PORT || 4000, () => console.log(`Server listening on ${process.env.PORT || 4000}`)); 
 }
 bootstrap().catch((error) => { console.error('Startup failed', error); process.exit(1); });
+EJS
+
+echo "index.js updated for Phase 3."

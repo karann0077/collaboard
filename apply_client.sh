@@ -1,3 +1,211 @@
+#!/bin/bash
+set -e
+cd /Users/DELL/Desktop/collab_board/client/src
+
+mkdir -p hooks components canvas
+
+# 1. client/src/collaboration/socket.js
+cat << 'EJS' > collaboration/socket.js
+import { io } from 'socket.io-client';
+
+const SERVER = import.meta.env.VITE_SERVER_URL || 'http://localhost:4000';
+let socketInstance = null;
+
+export function getSocket() {
+  if (!socketInstance) {
+    socketInstance = io(SERVER, { withCredentials: true, autoConnect: false });
+  }
+  return socketInstance;
+}
+
+export function connectSocket() {
+  const socket = getSocket();
+  if (!socket.connected) {
+    socket.connect();
+  }
+  return socket;
+}
+
+export function disconnectSocket() {
+  if (socketInstance) {
+    socketInstance.disconnect();
+    socketInstance = null;
+  }
+}
+EJS
+
+# 2. hooks/useRoomSocket.js
+cat << 'EJS' > hooks/useRoomSocket.js
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { getSocket, connectSocket, disconnectSocket } from '../collaboration/socket';
+
+const SERVER = import.meta.env.VITE_SERVER_URL || 'http://localhost:4000';
+
+export function useRoomSocket(roomId, name, engineRef) {
+  const [status, setStatus] = useState('Connecting');
+  const navigate = useNavigate();
+  const socketRef = useRef(null);
+
+  useEffect(() => {
+    let disposed = false;
+    let socket;
+    
+    const connect = () => {
+      if (disposed) return;
+      socket = connectSocket();
+      socketRef.current = socket;
+      
+      socket.on('connect', () => {
+        setStatus('Connected');
+        socket.emit('join-room', { roomId, name: name || 'Guest' });
+      });
+      
+      socket.on('disconnect', () => setStatus('Disconnected'));
+      
+      socket.on('initial-state', ({ document: next, baseSeq, participants: people }) => {
+        engineRef.current.install(next, baseSeq);
+      });
+      
+      socket.on('event-committed', (event) => engineRef.current.receive(event));
+      
+      socket.on('sync-response', (res) => {
+        if (res.mode === 'snapshot' && res.snapshot) {
+          engineRef.current.install(res.snapshot.document, res.snapshot.seq);
+        } else if (res.mode === 'events') {
+          res.events.forEach(e => engineRef.current.receive(e));
+        }
+      });
+      
+      socket.on('room-not-found', () => {
+        alert('Room not found');
+        navigate('/');
+      });
+      
+      socket.on('error-message', (message) => console.warn(message));
+    };
+
+    // Pre-flight health check to get session cookie, then connect socket
+    fetch(`${SERVER}/health`, { credentials: 'include' })
+      .catch(() => {})
+      .finally(connect);
+
+    return () => {
+      disposed = true;
+      if (socket) {
+        socket.off('connect');
+        socket.off('disconnect');
+        socket.off('initial-state');
+        socket.off('event-committed');
+        socket.off('sync-response');
+        socket.off('room-not-found');
+        socket.off('error-message');
+      }
+      disconnectSocket();
+    };
+  }, [roomId, name, navigate, engineRef]);
+
+  return { status, socketRef };
+}
+EJS
+
+# 3. hooks/usePresence.js
+cat << 'EJS' > hooks/usePresence.js
+import { useEffect, useState } from 'react';
+import { getSocket } from '../collaboration/socket';
+
+export function usePresence() {
+  const [participants, setParticipants] = useState([]);
+  
+  useEffect(() => {
+    const socket = getSocket();
+    
+    const handleInitial = ({ participants: people }) => setParticipants(people || []);
+    const handleUpdate = (people) => setParticipants(people || []);
+    
+    socket.on('initial-state', handleInitial);
+    socket.on('participants', handleUpdate);
+    
+    return () => {
+      socket.off('initial-state', handleInitial);
+      socket.off('participants', handleUpdate);
+    };
+  }, []);
+
+  return participants;
+}
+EJS
+
+# 4. components/Toolbar.jsx
+cat << 'EJS' > components/Toolbar.jsx
+import React from 'react';
+
+const TOOLS = [
+  ['pen', '✏️ Pen'],
+  ['rect', '▭ Rectangle'],
+  ['circle', '◯ Circle'],
+  ['line', '╱ Line'],
+  ['arrow', '→ Arrow'],
+  ['text', 'T Text'],
+  ['eraser', '🧽 Eraser']
+];
+
+export function Toolbar({ tool, setTool, color, setColor, width, setWidth, style, setStyle }) {
+  return (
+    <aside className="toolbar">
+      {TOOLS.map(([id, label]) => (
+        <div key={id} className={'tool' + (tool === id ? ' selected' : '')} onClick={() => setTool(id)}>
+          {label}
+        </div>
+      ))}
+      <hr />
+      <div className="control">
+        <label>Color</label>
+        <input type="color" value={color} onChange={(e) => setColor(e.target.value)} />
+      </div>
+      <div className="control">
+        <label>Width: {width}px</label>
+        <input type="range" min="1" max="20" value={width} onChange={(e) => setWidth(Number(e.target.value))} />
+      </div>
+      <div className="control">
+        <label>Style</label>
+        <select value={style} onChange={(e) => setStyle(e.target.value)}>
+          <option value="solid">Solid</option>
+          <option value="dashed">Dashed</option>
+          <option value="dotted">Dotted</option>
+        </select>
+      </div>
+    </aside>
+  );
+}
+EJS
+
+# 5. components/Participants.jsx
+cat << 'EJS' > components/Participants.jsx
+import React from 'react';
+import { usePresence } from '../hooks/usePresence';
+
+export function Participants() {
+  const participants = usePresence();
+  
+  return (
+    <div className="participants">
+      <h4>Participants ({participants.length})</h4>
+      <ul>
+        {participants.map((p) => (
+          <li key={p.id}>
+            <span className="avatar" style={{ background: p.color }} />
+            {p.name}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+EJS
+
+# 6. Refactor Room.jsx
+cat << 'EJS' > pages/Room.jsx
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { createEmptyDocument } from '@collaboard/shared';
@@ -185,3 +393,6 @@ export default function Room() {
     </div>
   );
 }
+EJS
+
+echo "Client correctly refactored."

@@ -1,0 +1,15 @@
+{
+  "name": "collaboard",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server",
+    "packages/shared"
+  ],
+  "scripts": {
+    "build:shared": "npm run build --workspace=packages/shared",
+    "build:client": "npm run build:shared && npm run build --workspace=client",
+    "build:server": "npm run build:shared",
+    "postinstall": "npm run build:shared"
+  }
+}

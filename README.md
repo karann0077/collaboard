@@ -3,7 +3,7 @@
 
 🔗 **Live Demo:** https://collaboard-delta.vercel.app/
 
-Collaboard is a **real-time collaborative whiteboard** that allows multiple users to create or join live sessions and draw simultaneously on a shared canvas. It demonstrates **event-sourced persistence**, **distributed WebSocket scaling via Redis pub/sub**, and **server-authoritative collaborative undo/redo**.
+Collaboard is a **real-time collaborative whiteboard** that allows multiple users to create or join live sessions and draw simultaneously on a shared canvas. It uses a sequenced append-only event log, server-authoritative per-actor undo/redo, and a sequence-aware client replica.
 
 ---
 
@@ -23,10 +23,10 @@ Collaboard is a **real-time collaborative whiteboard** that allows multiple user
   Multiple users draw, write, and interact simultaneously via **Socket.IO WebSockets** with Redis pub/sub — scales horizontally across server instances.
 
 - 💾 **Persistent Board State**  
-  Per-room draw events are stored as an **append-only log in PostgreSQL**. Full state is replayed on reconnect; no drawings are lost on server restart.
+  Canonical events are stored with immutable IDs and monotonic per-room sequence numbers. Reconnects replay a deterministic document projection without regressing its version.
 
 - ↩️ **Collaborative Undo/Redo**  
-  Ctrl+Z / Ctrl+Y triggers a **server-authoritative undo** — the server re-projects the event log and broadcasts the canonical board state to all users in the room simultaneously.
+  Ctrl+Z / Ctrl+Y append immutable control events. Undo is scoped to the current server-issued actor and never changes another participant's work.
 
 - 🔑 **Room-Based Sessions**  
   Create or join whiteboard sessions using a unique room code (nanoid 8-char).
@@ -191,6 +191,7 @@ ROOM_TTL_DAYS  = 7
 **Run migration once on prod:**
 ```bash
 psql $DATABASE_URL -f server/db/migrations/001_init.sql
+psql $DATABASE_URL -f server/db/migrations/002_canonical.sql
 ```
 
 ---

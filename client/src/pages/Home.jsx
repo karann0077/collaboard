@@ -15,7 +15,7 @@ export default function Home() {
     
     setLoading(true);
     try {
-      const res = await fetch(import.meta.env.VITE_SERVER_URL + '/create-room')
+      const res = await fetch((import.meta.env.VITE_SERVER_URL || 'http://localhost:4000') + '/create-room', { credentials: 'include' })
 
       const data = await res.json();
       navigate(`/room/${data.roomId}`, { state: { name: name.trim() } });
@@ -43,7 +43,7 @@ export default function Home() {
     setName('Guest');
     setLoading(true);
     try {
-      const res = await fetch(import.meta.env.VITE_SERVER_URL + '/create-room');
+      const res = await fetch((import.meta.env.VITE_SERVER_URL || 'http://localhost:4000') + '/create-room', { credentials: 'include' });
       const data = await res.json();
       navigate(`/room/${data.roomId}`, { state: { name: 'Guest' } });
     } catch (err) {
