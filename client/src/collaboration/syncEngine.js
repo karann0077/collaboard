@@ -1,4 +1,4 @@
-import { applyDomainEvent, createEmptyDocument } from '@collaboard/shared';
+import { applyDomainEvent, createEmptyDocument } from '../../../packages/shared/src/index.ts';
 
 export function createSyncEngine({ onChange, requestSync }) {
   let document = createEmptyDocument(); let lastAppliedSeq = 0; let syncing = true; let buffered = [];
