@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
-import { createEmptyDocument } from '../../../packages/shared/src/index.ts';
+import { createEmptyDocument } from '../../../packages/shared/src/document.ts';
 import { createSyncEngine } from '../collaboration/syncEngine';
 import { sendCommand } from '../collaboration/commandClient';
 import { drawObject, renderDocument } from '../canvas/renderer';
