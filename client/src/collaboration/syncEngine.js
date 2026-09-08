@@ -1,4 +1,5 @@
-import { applyDomainEvent, createEmptyDocument } from '../../../packages/shared/src/index.ts';
+import { applyDomainEvent } from '../../../packages/shared/src/applyDomainEvent.ts';
+import { createEmptyDocument } from '../../../packages/shared/src/document.ts';
 
 export function createSyncEngine({ onChange, requestSync }) {
   let document = createEmptyDocument(); let lastAppliedSeq = 0; let syncing = true; let buffered = [];
