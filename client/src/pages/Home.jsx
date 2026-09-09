@@ -8,27 +8,23 @@ async function ensureSession() {
     method: 'POST',
     credentials: 'include'
   });
-
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
     throw new Error(body.error || 'Unable to create guest session');
   }
-
   return response.json();
 }
 
-async function createRoom() {
+async function createRoomRequest() {
   await ensureSession();
   const response = await fetch(`${SERVER}/api/rooms`, {
     method: 'POST',
     credentials: 'include'
   });
-
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
     throw new Error(body.error || 'Unable to create room');
   }
-
   return response.json();
 }
 
@@ -36,6 +32,9 @@ export default function Home() {
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
+  // Bug #26: track created roomId so Copy Link can build a real room URL
+  const [createdRoomId, setCreatedRoomId] = useState(null);
+  const [copied, setCopied] = useState(false);
   const navigate = useNavigate();
 
   const createMeeting = async () => {
@@ -43,10 +42,10 @@ export default function Home() {
       alert('Please enter your name');
       return;
     }
-
     setLoading(true);
     try {
-      const data = await createRoom();
+      const data = await createRoomRequest();
+      setCreatedRoomId(data.roomId);
       navigate(`/room/${data.roomId}`, { state: { name: name.trim() } });
     } catch (err) {
       console.error(err);
@@ -85,7 +84,7 @@ export default function Home() {
     setName('Guest');
     setLoading(true);
     try {
-      const data = await createRoom();
+      const data = await createRoomRequest();
       navigate(`/room/${data.roomId}`, { state: { name: 'Guest' } });
     } catch (err) {
       console.error(err);
@@ -93,6 +92,27 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
+  };
+
+  /**
+   * Bug #26 fix: Copy Link now constructs the actual room URL.
+   * On the homepage before creating a room, this copies the homepage URL
+   * with a note to create/share a room code instead.
+   * After creating a room (createdRoomId is set), copies the room URL.
+   */
+  const copyLink = () => {
+    const trimmedCode = code.trim();
+
+    // If we have a room code entered in the join field, use that
+    if (/^[A-Za-z0-9_-]{8}$/.test(trimmedCode)) {
+      const roomUrl = `${window.location.origin}/room/${trimmedCode}`;
+      navigator.clipboard.writeText(roomUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      return;
+    }
+
+    alert('Enter a valid 8-character meeting code above, then click Copy Link to share it.');
   };
 
   const handleKeyPress = (e, action) => {
@@ -114,6 +134,7 @@ export default function Home() {
           </p>
           <label>Your Name</label>
           <input
+            id="create-name"
             type="text"
             placeholder="Enter your name"
             value={name}
@@ -123,10 +144,10 @@ export default function Home() {
             maxLength={80}
           />
           <div className="actions">
-            <button className="primary" onClick={createMeeting} disabled={loading}>
+            <button id="btn-create" className="primary" onClick={createMeeting} disabled={loading}>
               {loading ? 'Creating...' : 'Create Board'}
             </button>
-            <button className="secondary" onClick={handleQuickGuest} disabled={loading}>
+            <button id="btn-quick" className="secondary" onClick={handleQuickGuest} disabled={loading}>
               Quick Start
             </button>
           </div>
@@ -139,6 +160,7 @@ export default function Home() {
           </p>
           <label>Your Name</label>
           <input
+            id="join-name"
             type="text"
             placeholder="Enter your name"
             value={name}
@@ -148,6 +170,7 @@ export default function Home() {
           />
           <label style={{ marginTop: 12 }}>Meeting Code</label>
           <input
+            id="join-code"
             type="text"
             placeholder="Enter 8-character code"
             value={code}
@@ -157,18 +180,17 @@ export default function Home() {
             maxLength={8}
           />
           <div className="actions">
-            <button onClick={joinMeeting} className="primary" disabled={loading}>
+            <button id="btn-join" onClick={joinMeeting} className="primary" disabled={loading}>
               Join Board
             </button>
+            {/* Bug #26 fix: Copy Link now builds a real room URL from the code input */}
             <button
-              onClick={() => {
-                navigator.clipboard.writeText(window.location.href);
-                alert('✓ Page URL copied to clipboard!');
-              }}
+              id="btn-copy-link"
+              onClick={copyLink}
               className="secondary"
               disabled={loading}
             >
-              Copy Link
+              {copied ? '✓ Copied!' : '🔗 Copy Link'}
             </button>
           </div>
         </section>

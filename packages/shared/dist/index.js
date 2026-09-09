@@ -14,7 +14,9 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.createEmptyDocument = void 0;
 __exportStar(require("./eventTypes"), exports);
 __exportStar(require("./commandTypes"), exports);
-__exportStar(require("./document"), exports);
+var document_1 = require("./document");
+Object.defineProperty(exports, "createEmptyDocument", { enumerable: true, get: function () { return document_1.createEmptyDocument; } });
 __exportStar(require("./applyDomainEvent"), exports);

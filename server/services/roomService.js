@@ -1,11 +1,16 @@
 const pool = require('../db/postgres');
 const { nanoid } = require('nanoid');
 
+/**
+ * Creates a new room and registers the creator as 'owner' in room_members.
+ * Works for ALL actor types — guest (ses_...) and registered user (usr_...).
+ */
 async function createRoom(actorId) {
   const roomId = nanoid(8);
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+
     await client.query(
       'INSERT INTO rooms (room_id, owner_actor_id) VALUES ($1, $2)',
       [roomId, actorId || null]
@@ -15,9 +20,11 @@ async function createRoom(actorId) {
       [roomId]
     );
 
-    if (actorId && !actorId.startsWith('ses_')) {
+    // Always add the creator as 'owner' in room_members regardless of actor type.
+    // Migration 005 removed the users FK from room_members so guest IDs are valid.
+    if (actorId) {
       await client.query(
-        'INSERT INTO room_members (room_id, user_id, role) VALUES ($1, $2, $3)',
+        'INSERT INTO room_members (room_id, actor_id, role) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
         [roomId, actorId, 'owner']
       );
     }
